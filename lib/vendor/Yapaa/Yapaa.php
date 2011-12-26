@@ -23,7 +23,7 @@ class Yapaa implements \Yappa\Weaver {
     private function __construct() {
         
     }
-    
+
     public static function weaveFunction($functionName) {
         if (!function_exists($functionName)) {
             throw new UndefinedFunctionException;
@@ -110,7 +110,7 @@ class YapaaFunction implements \Yappa\WeaveFunction {
             try {
                 \$return .= $new_func_call;
             }
-            ".((strlen($exceptions) > 0) ? $exceptions : 'catch (Exception $e) { throw $e; }')."
+            " . ((strlen($exceptions) > 0) ? $exceptions : 'catch (Exception $e) { throw $e; }') . "
             {$this->codeAfter};
             return \$return;
         ";
@@ -158,12 +158,15 @@ class YapaaFunction implements \Yappa\WeaveFunction {
     }
 
     public function isWeaved() {
-        $isWeaved = false;
-        if ((($this->type === static::TYPE_FUNCTION) and (function_exists($this->originalFunctionInvoke))) or
-                (($this->type === static::TYPE_METHOD) and (method_exists($this->className, $this->originalFunctionInvoke)))
+        if (
+                (($this->type === static::TYPE_FUNCTION) and
+                /**/ (function_exists($this->originalFunctionInvoke))) or
+                (($this->type === static::TYPE_METHOD) and
+                /**/ (method_exists($this->className, $this->originalFunctionInvoke)))
         ) {
             return true;
         }
+        return false;
     }
 
     private function weaveRedefine() {
