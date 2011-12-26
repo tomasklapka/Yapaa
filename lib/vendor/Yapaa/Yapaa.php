@@ -170,7 +170,7 @@ class YapaaFunction implements \Yappa\WeaveFunction {
         if ($this->type === static::TYPE_FUNCTION) {
             runkit_function_redefine($this->functionName, '', $this->adviceCode);
         } else {
-            runkit_method_redefine($this->className, $this->functionName, '', $this->adviceCode);
+            runkit_method_redefine($this->className, $this->functionName, '', $this->adviceCode, $this->classAccess);
         }
     }
 
@@ -180,7 +180,7 @@ class YapaaFunction implements \Yappa\WeaveFunction {
             runkit_function_add($this->functionName, '', $this->adviceCode);
         } else {
             runkit_method_rename($this->className, $this->functionName, $this->originalFunctionInvoke);
-            runkit_method_add($this->className, $this->functionName, '', $this->adviceCode);
+            runkit_method_add($this->className, $this->functionName, '', $this->adviceCode, $this->classAccess);
         }
     }
 
