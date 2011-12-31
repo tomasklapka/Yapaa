@@ -110,7 +110,7 @@ class Pointcut implements IPointcut {
                     list($class, $name) = explode(',', $args);
                     break;
                 default:
-                    throw new Exception("Unknown pointcut type");
+                    throw new YapaaException("Unknown pointcut type");
             }
         }
         return array($type, $name, $class);

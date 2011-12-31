@@ -22,6 +22,7 @@ abstract class JoinPoint implements IJoinPoint {
 
     protected $adviceCode = '';
     protected static $weaver = '\Yapaa\RunkitWeaver';
+    protected static $includeInternals = false;
     protected $type = NULL;
     protected $originalFunctionName = '';
 
@@ -34,6 +35,19 @@ abstract class JoinPoint implements IJoinPoint {
         self::$weaver = $weaver;
     }
 
+    static public function includeInternals() {
+        $internal_override = ini_get('runkit.internal_override');
+        if ($internal_override) {
+            self::$includeInternals = true;
+        } else {
+            throw new YapaaException("Cannot include internal functions unless runkit.internal_override is turned on in php.ini");
+        }
+    }
+
+    static public function excludeInternals() {
+        self::$includeInternals = false;
+    }
+
     public function getType() {
         return $this->type;
     }
@@ -44,9 +58,9 @@ abstract class JoinPoint implements IJoinPoint {
 
     static protected function filterMask($mask, $array) {
 
-        $regexp = '/^(.*\\\)?'.preg_replace(
-                '/%/', '[\w\d]*', preg_quote(
-                        preg_replace('/\*/', '%', $mask))).'$/i';
+        $regexp = '/^(.*\\\)?' . preg_replace(
+                        '/%/', '\w*', preg_quote(
+                                preg_replace('/\*/', '%', $mask))) . '$/i';
         $filtered = array();
         foreach ($array as $element) {
             if (preg_match($regexp, $element)) {
@@ -56,8 +70,7 @@ abstract class JoinPoint implements IJoinPoint {
         return $filtered;
     }
 
-    public function weave()
-    {
+    public function weave() {
         /* declared because of interface */
     }
 
@@ -80,7 +93,13 @@ class JoinPointFunction extends JoinPoint {
 
     public static function findMatching($mask) {
         $defined_functions = get_defined_functions();
-        $matching_functions = static::filterMask($mask, $defined_functions['user']);
+        $user_functions = $defined_functions['user'];
+        $internal_functions = array();
+        if (self::$includeInternals) {
+            $internal_functions = $defined_functions['internal'];
+        }
+        $functions_to_match = array_merge($user_functions, $internal_functions);
+        $matching_functions = static::filterMask($mask, $functions_to_match);
         $joinPoints = array();
         foreach ($matching_functions as $functionName) {
             $joinPoint = new JoinPointFunction($functionName);

@@ -23,9 +23,9 @@ require_once __DIR__ . '/RunkitWeaver.php';
 class Yapaa implements IYapaa {
 
     private static $pointcuts = array();
-    
-    private function __construct() {
-        /* deny access to constructor - static factory */
+
+    public function __construct() {
+        throw new YapaaException("Yapaa is static class. It cannot be instantiated.");
     }
 
     public static function Pointcut($pointcutMask) {
@@ -39,4 +39,22 @@ class Yapaa implements IYapaa {
             $pointcut->weave();
         }
     }
+    
+    public function __clone() {
+        throw new YapaaException("Yapaa is static class. It cannot be cloned.");
+    }
+    
+    public function __wakeup() {
+        throw new YapaaException("Yapaa is static class. It cannot be unserialized.");
+    }
+
+}
+
+/**
+ * Yapaa Exception
+ * 
+ * @author Tomáš Klapka
+ */
+class YapaaException extends \RuntimeException {
+    
 }

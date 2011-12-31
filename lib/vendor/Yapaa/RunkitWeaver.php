@@ -34,7 +34,7 @@ class RunkitWeaver implements IWeaver {
 
     public static function weaveFunction($functionName, $adviceCode) {
         if (!function_exists($functionName)) {
-            throw new \Exception("Function $functionName does not exist.");
+            throw new YapaaException("Function $functionName does not exist.");
         }
 
         $code = "$adviceCode;";
@@ -50,7 +50,7 @@ class RunkitWeaver implements IWeaver {
 
     public static function weaveMethod($className, $methodName, $adviceCode) {
         if (!method_exists($className, $methodName)) {
-            throw new \Exception("Method $className::$methodName does not exist.");
+            throw new YapaaException("Method $className::$methodName does not exist.");
         }
 
         $code = "$adviceCode;";

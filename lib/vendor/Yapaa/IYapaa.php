@@ -46,21 +46,21 @@ interface IPointcut {
     /**
      * Adds $advice to be run before pointcut
      * @param string
-     * @return @this
+     * @return $this
      */
     public function addAdviceBefore($advice);
 
     /**
      * Adds $advice to be run after pointcut
      * @param string
-     * @return @this
+     * @return $this
      */
     public function addAdviceAfter($advice);
 
     /**
      * Adds $advice to be run instead of pointcut and allow calling $invoke()
      * @param string
-     * @return @this
+     * @return $this
      */
     public function addAdviceAround($advice);
 
@@ -68,13 +68,13 @@ interface IPointcut {
      * Adds $advice to catch $exception when pointcut is invoked
      * @param string
      * @param string
-     * @return @this
+     * @return $this
      */
     public function addExceptionAdvice($exception, $advice);
 
     /**
      * Weaves advices added by add*Advice* methods into the original method/function.
-     * @return @this
+     * @return $this
      */
     public function weave();
 }
@@ -131,6 +131,7 @@ interface IWeaver {
     /**
      * Returns true if method is weaved
      * @param string
+     * @param string
      * @return boolean
      */
     public static function isMethodWeaved($className, $methodName);
@@ -145,6 +146,7 @@ interface IWeaver {
 
     /**
      * Weave method
+     * @param string
      * @param string
      * @param string
      * @return string
