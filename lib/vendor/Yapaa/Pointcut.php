@@ -70,10 +70,14 @@ class Pointcut implements IPointcut {
         return $this;
     }
 
+    public function getAdvices() {
+        return $this->advices;
+    }
+
     public function weave() {
         $this->findJoinPoints();
         foreach ($this->joinPoints as $joinPoint) {
-            $joinPoint->setAdviceCode($this->buildAdvice($joinPoint));
+            $joinPoint->buildAdvice();
             $joinPoint->weave();
         }
         return $this;
@@ -89,7 +93,7 @@ class Pointcut implements IPointcut {
                 $points = JoinPointFunction::findMatching($name);
             }
             foreach ($points as $point) {
-                array_push($this->joinPoints, $point);
+                array_push($this->joinPoints, $point->addPointcut($this));
             }
         }
         return $this->joinPoints;
@@ -112,71 +116,6 @@ class Pointcut implements IPointcut {
             }
         }
         return array($type, $name, $class);
-    }
-
-    private function buildAdvice($joinPoint) {
-
-        $new_func_ident = $this->buildFunctionIdentString($joinPoint);
-        $new_func_call = "\$return .= call_user_func_array($new_func_ident, ((\$argc > 0) ? \$argv : array()));";
-        list($exceptionsBegin, $exceptionsEnd) = $this->buildExceptionsAdviceString();
-        $codeBefore = $this->buildBeforeAdviceString();
-        $codeAround = $this->buildAroundAdviceString($new_func_call);
-        $codeAfter = $this->buildAfterAdviceString();
-
-        $advice = '
-$argc = func_num_args();
-$argv = func_get_args();
-$return = NULL;' . "\n" .
-                $codeBefore . ";\n" .
-                $exceptionsBegin . "\n" .
-                $codeAround . ";\n" .
-                $exceptionsEnd . "\n" .
-                $codeAfter . ";\n" .
-                'return $return' . ";\n";
-        return $advice;
-    }
-
-    private function buildFunctionIdentString($joinPoint) {
-        if ($joinPoint->getType() == IJoinPoint::TYPE_FUNCTION) {
-            $func_ident = "'" . $joinPoint->getOriginalFunctionName() . "'";
-        } else {
-            $className = $joinPoint->getClassName();
-            $reflection = new \ReflectionMethod($className, $joinPoint->getMethodName());
-            if ($reflection->isStatic()) {
-                $func_ident = "'" . $className . "::" . $joinPoint->getOriginalFunctionName() . "'";
-            } else {
-                $func_ident = "array('" . $className . "', '" . $joinPoint->getOriginalFunctionName() . "')";
-            }
-        }
-        return $func_ident;
-    }
-
-    private function buildExceptionsAdviceString() {
-        $string = '';
-        foreach ($this->advices['exception'] as $exception => $advices) {
-            $advice = join("; ", $advices);
-            $string .= "catch ($exception \$e) { $advice; }\n";
-        }
-        if (strlen($string) > 0) {
-            return array("try {\n", "\n} $string");
-        }
-        return array('', '');
-    }
-
-    private function buildBeforeAdviceString() {
-        return implode(";\n", $this->advices['before']);
-    }
-
-    private function buildAfterAdviceString() {
-        return implode(";\n", $this->advices['after']);
-    }
-
-    private function buildAroundAdviceString($new_func_call) {
-        $string = $new_func_call;
-        foreach ($this->advices['around'] as $aroundAdvice) {
-            $string = str_replace(self::KEYWORD_PROCEED, "$string;", $aroundAdvice);
-        }
-        return $string;
     }
 
 }

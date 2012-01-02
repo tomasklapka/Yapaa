@@ -42,7 +42,9 @@ class RunkitWeaver implements IWeaver {
 
         $code = "$adviceCode;";
 
-        if (!static::isFunctionWeaved($functionName)) {
+        if (static::isFunctionWeaved($functionName)) {
+            runkit_function_redefine($functionName, '', $code);
+        } else {
             runkit_function_rename($functionName, static::originalFunctionName($functionName));
             runkit_function_add($functionName, '', $code);
         }
@@ -59,31 +61,44 @@ class RunkitWeaver implements IWeaver {
 
         $code = "$adviceCode;";
 
-        $access = static::getClassMethodAccess($className, $methodName);
+        $modifiers = static::getClassMethodModifiers($className, $methodName);
 
-        if (!static::isMethodWeaved($className, $methodName)) {
+        if (static::isMethodWeaved($className, $methodName)) {
+            $backtrace = debug_backtrace();
+            $found = false;
+            foreach ($backtrace as $call) {
+                if (isset($call['class']) and
+                        ($call['class'] === $className) and
+                        ($call['function'] === $methodName)) {
+                    $found = true;
+                }
+            }
+            if (!$found) {
+                runkit_method_redefine($className, $methodName, '', $code, $modifiers);
+            }
+        } else {
             runkit_method_rename($className, $methodName, static::originalFunctionName($methodName));
-            runkit_method_add($className, $methodName, '', $code, $access);
+            runkit_method_add($className, $methodName, '', $code, $modifiers);
         }
         return static::originalFunctionName($methodName);
     }
 
-    private static function getClassMethodAccess($className, $methodName) {
+    private static function getClassMethodModifiers($className, $methodName) {
         $reflection = new \ReflectionMethod($className, $methodName);
         $modifiers = $reflection->getModifiers();
 
-        $access = RUNKIT_ACC_PUBLIC;
+        $return = RUNKIT_ACC_PUBLIC;
         if ($modifiers & \ReflectionMethod::IS_PRIVATE) {
-            $access = RUNKIT_ACC_PRIVATE;
+            $return = RUNKIT_ACC_PRIVATE;
         } elseif ($modifiers & \ReflectionMethod::IS_PROTECTED) {
-            $access = RUNKIT_ACC_PROTECTED;
+            $return = RUNKIT_ACC_PROTECTED;
         }
 
         if ($reflection->isStatic()) {
-            $access |= RUNKIT_ACC_STATIC;
+            $return |= RUNKIT_ACC_STATIC;
         }
 
-        return $access;
+        return $return;
     }
 
 }

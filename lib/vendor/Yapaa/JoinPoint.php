@@ -20,11 +20,13 @@ require_once __DIR__ . '/IYapaa.php';
  */
 abstract class JoinPoint implements IJoinPoint {
 
-    protected $adviceCode = '';
     protected static $weaver = '\Yapaa\RunkitWeaver';
     protected static $includeInternals = false;
+    protected static $joinPoints = array();
+    protected $adviceCode = '';
     protected $type = NULL;
     protected $originalFunctionName = '';
+    protected $pointcuts = array();
 
     public function setAdviceCode($adviceCode) {
         $this->adviceCode = &$adviceCode;
@@ -33,6 +35,111 @@ abstract class JoinPoint implements IJoinPoint {
 
     static public function setWeaver($weaver) {
         self::$weaver = $weaver;
+    }
+
+    public function addPointcut(IPointcut $pointcut) {
+        if (!in_array($pointcut, $this->pointcuts)) {
+            $this->pointcuts[] = $pointcut;
+        }
+        return $this;
+    }
+
+    public function buildAdvice() {
+        $new_func_ident = $this->buildFunctionIdentString();
+        $new_func_call = "\$return .= call_user_func_array($new_func_ident, ((\$argc > 0) ? \$argv : array()));";
+        list($exceptionsBegin, $exceptionsEnd) = $this->buildExceptionsAdviceString();
+        $codeBefore = $this->buildBeforeAdviceString();
+        $codeAround = $this->buildAroundAdviceString($new_func_call);
+        $codeAfter = $this->buildAfterAdviceString();
+
+        if ($this->getType() === IJoinPoint::TYPE_FUNCTION) {
+            $className = '';
+            $functionName = $this->getFunctionName();
+        } else {
+            $className = $this->getClassName();
+            $functionName = $this->getMethodName();
+        }
+
+        $advice = '
+$argc = func_num_args();
+$argv = func_get_args();
+$className = "' . $className . '";
+$functionName = "' . $functionName . '";
+$return = NULL;' . "\n" .
+                $codeBefore . ";\n" .
+                $exceptionsBegin . "\n" .
+                $codeAround . ";\n" .
+                $exceptionsEnd . "\n" .
+                $codeAfter . ";\n" .
+                'return $return' . ";\n";
+
+        $this->adviceCode = $advice;
+        return $advice;
+    }
+
+    private function buildFunctionIdentString() {
+        if ($this->getType() == IJoinPoint::TYPE_FUNCTION) {
+            $func_ident = "'" . $this->getOriginalFunctionName() . "'";
+        } else {
+            $className = $this->getClassName();
+            $reflection = new \ReflectionMethod($className, $this->getMethodName());
+            if ($reflection->isStatic()) {
+                $func_ident = "'" . $className . "::" . $this->getOriginalFunctionName() . "'";
+            } else {
+                $func_ident = "array('" . $className . "', '" . $this->getOriginalFunctionName() . "')";
+            }
+        }
+        return $func_ident;
+    }
+
+    private function buildExceptionsAdviceString() {
+        $string = '';
+        $exceptions = array();
+        foreach ($this->pointcuts as $pointcut) {
+            $advices = $pointcut->getAdvices();
+            foreach ($advices['exception'] as $exception => $advices) {
+                if (!isset($exceptions[$exception])) {
+                    $exceptions[$exception] = array();
+                }
+                $exceptions[$exception] = join("; ", $advices);
+            }
+        }
+        foreach ($exceptions as $exception => $advice) {
+            $string .= "catch ($exception \$e) { $advice; }\n";
+        }
+        if (strlen($string) > 0) {
+            return array("try {\n", "\n} $string");
+        }
+        return array('', '');
+    }
+
+    private function buildAdviceString($where) {
+        $string = '';
+        foreach ($this->pointcuts as $pointcut) {
+            $advices = $pointcut->getAdvices();
+            $string .= implode(";\n", $advices[$where]);
+        }
+        return $string;
+    }
+
+    private function buildBeforeAdviceString() {
+        return $this->buildAdviceString('before');
+    }
+
+    private function buildAfterAdviceString() {
+        return $this->buildAdviceString('after');
+    }
+
+    private function buildAroundAdviceString($new_func_call) {
+
+        $string = $new_func_call;
+        foreach ($this->pointcuts as $pointcut) {
+            $advices = $pointcut->getAdvices();
+            foreach ($advices['around'] as $aroundAdvice) {
+                $string = str_replace(IPointcut::KEYWORD_PROCEED, "$string;", $aroundAdvice);
+            }
+        }
+        return $string;
     }
 
     static public function includeInternals() {
@@ -103,10 +210,25 @@ class JoinPointFunction extends JoinPoint {
         $joinPoints = array();
         foreach ($matching_functions as $functionName) {
             Yapaa::log("JoinPoint found for function($mask): $functionName");
-            $joinPoint = new JoinPointFunction($functionName);
+            $joinPoint = self::findExistingJoinPoint($functionName);
+            if (!$joinPoint) {
+                $joinPoint = new JoinPointFunction($functionName);
+                self::$joinPoints[] = $joinPoint;
+            }
             $joinPoints[] = $joinPoint;
         }
         return $joinPoints;
+    }
+
+    public static function findExistingJoinPoint($functionName) {
+        foreach (self::$joinPoints as $joinPoint) {
+            if (($joinPoint->getType() == self::TYPE_FUNCTION) and
+                    ($joinPoint->getFunctionName() == $functionName)) {
+                Yapaa::log("JoinPoint already exists for $functionName");
+                return $joinPoint;
+            }
+        }
+        return false;
     }
 
     public function weave() {
@@ -143,17 +265,33 @@ class JoinPointMethod extends JoinPoint {
 
     public static function findMatching($classMask, $methodMask) {
         $matching_classes = static::filterMask($classMask, get_declared_classes());
-        Yapaa::log("classes matching $classMask: '".join("','",$matching_classes)."'");
+        Yapaa::log("classes matching $classMask: '" . join("','", $matching_classes) . "'");
         $joinPoints = array();
         foreach ($matching_classes as $className) {
             $matching_methods = static::filterMask($methodMask, get_class_methods($className));
             foreach ($matching_methods as $methodName) {
                 Yapaa::log("JoinPoint found for method($classMask,$methodMask): $className::$methodName");
-                $joinPoint = new JoinPointMethod($className, $methodName);
+                $joinPoint = self::findExistingJoinPoint($className, $methodName);
+                if (!$joinPoint) {
+                    $joinPoint = new JoinPointMethod($className, $methodName);
+                    self::$joinPoints[] = $joinPoint;
+                }
                 $joinPoints[] = $joinPoint;
             }
         }
         return $joinPoints;
+    }
+
+    public static function findExistingJoinPoint($className, $methodName) {
+        foreach (self::$joinPoints as $joinPoint) {
+            if (($joinPoint->getType() == self::TYPE_METHOD) and
+                    ($joinPoint->getClassName() == $className) and
+                    ($joinPoint->getMethodName() == $methodName)) {
+                Yapaa::log("JoinPoint already exists for $className::$methodName");
+                return $joinPoint;
+            }
+        }
+        return false;
     }
 
     public function weave() {
