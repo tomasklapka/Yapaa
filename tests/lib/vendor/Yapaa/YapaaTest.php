@@ -34,6 +34,8 @@ class YapaaTest extends \PHPUnit_Framework_TestCase {
      * @covers \Yapaa\Yapaa::Pointcut
      */
     public function testWeave() {
+        //\Yapaa\Yapaa::logToFile(__DIR__.'/yapaa.log');
+        //\Yapaa\Yapaa::logVerbose();
         $this->pointcut = \Yapaa\Yapaa::Pointcut(array(                 // create pointcut
                     'function(test_function)',                          // for function test_function()
                     'function(not_defined_function_yet)',               // for function not_defined_function_yet()

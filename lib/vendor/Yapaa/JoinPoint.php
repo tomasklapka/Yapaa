@@ -102,6 +102,7 @@ class JoinPointFunction extends JoinPoint {
         $matching_functions = static::filterMask($mask, $functions_to_match);
         $joinPoints = array();
         foreach ($matching_functions as $functionName) {
+            Yapaa::log("JoinPoint found for function($mask): $functionName");
             $joinPoint = new JoinPointFunction($functionName);
             $joinPoints[] = $joinPoint;
         }
@@ -142,10 +143,12 @@ class JoinPointMethod extends JoinPoint {
 
     public static function findMatching($classMask, $methodMask) {
         $matching_classes = static::filterMask($classMask, get_declared_classes());
+        Yapaa::log("classes matching $classMask: '".join("','",$matching_classes)."'");
         $joinPoints = array();
         foreach ($matching_classes as $className) {
             $matching_methods = static::filterMask($methodMask, get_class_methods($className));
             foreach ($matching_methods as $methodName) {
+                Yapaa::log("JoinPoint found for method($classMask,$methodMask): $className::$methodName");
                 $joinPoint = new JoinPointMethod($className, $methodName);
                 $joinPoints[] = $joinPoint;
             }

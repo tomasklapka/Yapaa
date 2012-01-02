@@ -125,9 +125,9 @@ class Pointcut implements IPointcut {
         $codeAfter = $this->buildAfterAdviceString();
 
         $advice = '
-                $argc = func_num_args();
-                $argv = func_get_args();
-                $return = NULL;' . "\n" .
+$argc = func_num_args();
+$argv = func_get_args();
+$return = NULL;' . "\n" .
                 $codeBefore . ";\n" .
                 $exceptionsBegin . "\n" .
                 $codeAround . ";\n" .

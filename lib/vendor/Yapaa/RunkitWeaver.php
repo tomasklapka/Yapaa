@@ -37,6 +37,8 @@ class RunkitWeaver implements IWeaver {
             throw new YapaaException("Function $functionName does not exist.");
         }
 
+        Yapaa::log("Weaving function $functionName", " by <<<'EOF'\n".preg_replace('/\n/', "\n\t", $adviceCode)."\nEOF\n");
+        
         $code = "$adviceCode;";
         
         if (static::isFunctionWeaved($functionName)) {
@@ -53,6 +55,8 @@ class RunkitWeaver implements IWeaver {
         if (!method_exists($className, $methodName)) {
             throw new YapaaException("Method $className::$methodName does not exist.");
         }
+
+        Yapaa::log("Weaving method $className::$methodName", " by <<<'EOF'\n".preg_replace('/\n/', "\n\t", $adviceCode)."\nEOF\n");
 
         $code = "$adviceCode;";
 
