@@ -40,7 +40,8 @@ class RunkitWeaver implements IWeaver {
         $code = "$adviceCode;";
         
         if (static::isFunctionWeaved($functionName)) {
-            runkit_function_redefine($functionName, '', $code);
+            // TODO: ignoring errors is not nice but solves issue of trying to redefine autoloader
+            @runkit_function_redefine($functionName, '', $code);
         } else {
             runkit_function_rename($functionName, static::originalFunctionName($functionName));
             runkit_function_add($functionName, '', $code);
@@ -58,7 +59,8 @@ class RunkitWeaver implements IWeaver {
         $access = static::getClassMethodAccess($className, $methodName);
 
         if (static::isMethodWeaved($className, $methodName)) {
-            runkit_method_redefine($className, $methodName, '', $code, $access);
+            // TODO: ignoring errors is not nice but solves issue of trying to redefine autoloader
+            @runkit_method_redefine($className, $methodName, '', $code, $access);
         } else {
             runkit_method_rename($className, $methodName, static::originalFunctionName($methodName));
             runkit_method_add($className, $methodName, '', $code, $access);

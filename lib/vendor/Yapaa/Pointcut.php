@@ -84,7 +84,6 @@ class Pointcut implements IPointcut {
         $this->joinPoints = array();
         foreach ($this->masks as $mask) {
             list($type, $name, $class) = $this->parseMask($mask);
-            //var_dump ($type, $name, $class);
             if ($type === 'method') {
                 $points = JoinPointMethod::findMatching($class, $name);
             } elseif ($type === 'function') {
@@ -100,7 +99,7 @@ class Pointcut implements IPointcut {
     private function parseMask($pointMask) {
         $class = '';
         $mask = preg_replace('/\s*/', '', $pointMask);
-        if (preg_match('/^(\w+)\(([\w,\*_]+)\)$/', $mask, $match)) {
+        if (preg_match('/^(\w+)\(([\\\\\w,\*_]+)\)$/', $mask, $match)) {
             list(, $type, $args) = $match;
             switch ($type) {
                 case 'function':
@@ -135,8 +134,6 @@ class Pointcut implements IPointcut {
                 $exceptionsEnd . "\n" .
                 $codeAfter . ";\n" .
                 'return $return' . ";\n";
-
-//        var_dump ($advice);
         return $advice;
     }
 
