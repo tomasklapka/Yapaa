@@ -37,14 +37,12 @@ class RunkitWeaver implements IWeaver {
             throw new YapaaException("Function $functionName does not exist.");
         }
 
-        Yapaa::log("Weaving function $functionName", " by <<<'EOF'\n".preg_replace('/\n/', "\n\t", $adviceCode)."\nEOF\n");
-        
+        Yapaa::log("Weaving function $functionName", " by <<<'EOF'\n" .
+                preg_replace('/\n/', "\n\t", $adviceCode) . "\nEOF\n");
+
         $code = "$adviceCode;";
-        
-        if (static::isFunctionWeaved($functionName)) {
-            // TODO: ignoring errors is not nice but solves issue of trying to redefine autoloader
-            @runkit_function_redefine($functionName, '', $code);
-        } else {
+
+        if (!static::isFunctionWeaved($functionName)) {
             runkit_function_rename($functionName, static::originalFunctionName($functionName));
             runkit_function_add($functionName, '', $code);
         }
@@ -56,16 +54,14 @@ class RunkitWeaver implements IWeaver {
             throw new YapaaException("Method $className::$methodName does not exist.");
         }
 
-        Yapaa::log("Weaving method $className::$methodName", " by <<<'EOF'\n".preg_replace('/\n/', "\n\t", $adviceCode)."\nEOF\n");
+        Yapaa::log("Weaving method $className::$methodName", " by <<<'EOF'\n" .
+                preg_replace('/\n/', "\n\t", $adviceCode) . "\nEOF\n");
 
         $code = "$adviceCode;";
 
         $access = static::getClassMethodAccess($className, $methodName);
 
-        if (static::isMethodWeaved($className, $methodName)) {
-            // TODO: ignoring errors is not nice but solves issue of trying to redefine autoloader
-            @runkit_method_redefine($className, $methodName, '', $code, $access);
-        } else {
+        if (!static::isMethodWeaved($className, $methodName)) {
             runkit_method_rename($className, $methodName, static::originalFunctionName($methodName));
             runkit_method_add($className, $methodName, '', $code, $access);
         }
@@ -82,6 +78,12 @@ class RunkitWeaver implements IWeaver {
         } elseif ($modifiers & \ReflectionMethod::IS_PROTECTED) {
             $access = RUNKIT_ACC_PROTECTED;
         }
+
+        if ($reflection->isStatic()) {
+            $access |= RUNKIT_ACC_STATIC;
+        }
+
+        return $access;
     }
 
 }

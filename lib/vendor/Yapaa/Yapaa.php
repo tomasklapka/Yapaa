@@ -54,7 +54,7 @@ class Yapaa implements IYapaa {
         self::log("---------------\n");
         self::log('Logging started');
     }
-    
+
     public static function logVerbose() {
         self::$logVerbose = true;
     }

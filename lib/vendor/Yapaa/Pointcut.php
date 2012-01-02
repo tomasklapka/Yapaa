@@ -118,7 +118,7 @@ class Pointcut implements IPointcut {
     private function buildAdvice($joinPoint) {
 
         $new_func_ident = $this->buildFunctionIdentString($joinPoint);
-        $new_func_call = "\$return .= call_user_func_array($new_func_ident, ((\$argc > 0) ? \$argv : NULL));";
+        $new_func_call = "\$return .= call_user_func_array($new_func_ident, ((\$argc > 0) ? \$argv : array()));";
         list($exceptionsBegin, $exceptionsEnd) = $this->buildExceptionsAdviceString();
         $codeBefore = $this->buildBeforeAdviceString();
         $codeAround = $this->buildAroundAdviceString($new_func_call);
