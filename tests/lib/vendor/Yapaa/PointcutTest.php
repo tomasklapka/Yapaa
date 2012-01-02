@@ -43,7 +43,7 @@ class PointcutTest extends \PHPUnit_Framework_TestCase {
     public function testAddAdviceAfter() {
         $pointcut = new Pointcut(array('function(test_function)', 'method(TestClass,*method)'));
         $advice = '$return .= "after";';
-        $pointcut->addAdviceAfter($advice);
+        $pointcut->addAdviceAfter($advice)->weave();
         $advices = $this->getPrivateValue('\Yapaa\Pointcut', 'advices', $pointcut);
         $this->assertEquals(1, count($advices['after']));
         $this->assertEquals($advice, $advices['after'][0]);
@@ -60,7 +60,7 @@ class PointcutTest extends \PHPUnit_Framework_TestCase {
     public function testAddAdviceBefore() {
         $pointcut = new Pointcut('method(*,testClass*)');
         $advice = '$return .= "before";';
-        $pointcut->addAdviceBefore($advice);
+        $pointcut->addAdviceBefore($advice)->weave();
         $advices = $this->getPrivateValue('\Yapaa\Pointcut', 'advices', $pointcut);
         $this->assertEquals(1, count($advices['before']));
         $this->assertEquals($advice, $advices['before'][0]);
@@ -77,7 +77,7 @@ class PointcutTest extends \PHPUnit_Framework_TestCase {
     public function testAddAdviceAround() {
         $pointcut = new Pointcut('function(test_function_around)');
         $advice = '$return .= "before"; Yapaa::proceed(); $return .= "after";';
-        $pointcut->addAdviceAround($advice);
+        $pointcut->addAdviceAround($advice)->weave();
         $advices = $this->getPrivateValue('\Yapaa\Pointcut', 'advices', $pointcut);
         $this->assertEquals(1, count($advices['around']));
         $this->assertEquals($advice, $advices['around'][0]);
@@ -91,7 +91,7 @@ class PointcutTest extends \PHPUnit_Framework_TestCase {
     public function testAddExceptionAdvice() {
         $pointcut = new Pointcut('function(test_function_exception)');
         $advice = 'return "Exception thrown!";';
-        $pointcut->addExceptionAdvice('Exception', $advice);
+        $pointcut->addExceptionAdvice('Exception', $advice)->weave();
         $advices = $this->getPrivateValue('\Yapaa\Pointcut', 'advices', $pointcut);
         $this->assertEquals(1, count($advices['exception']['Exception']));
         $this->assertEquals($advice, $advices['exception']['Exception'][0]);

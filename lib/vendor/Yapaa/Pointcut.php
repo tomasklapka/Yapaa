@@ -47,7 +47,6 @@ class Pointcut implements IPointcut {
             }
             $advices[$key][] = $advice;
         }
-        $this->weave();
         return $this;
     }
 

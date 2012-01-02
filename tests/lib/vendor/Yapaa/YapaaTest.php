@@ -26,16 +26,14 @@ class YapaaTest extends \PHPUnit_Framework_TestCase {
     protected $testObj;
     protected $pointcut;
 
-    protected function setUp() {
-        $this->testObj = new \TestClass();
-    }
-
     /**
      * @covers \Yapaa\Yapaa::Pointcut
+     * @covers \Yapaa\Yapaa::weaveAllPointcuts
      */
     public function testWeave() {
         //\Yapaa\Yapaa::logToFile(__DIR__.'/yapaa.log');
         //\Yapaa\Yapaa::logVerbose();
+        $this->testObj = new \TestClass();
         $this->pointcut = \Yapaa\Yapaa::Pointcut(array(                 // create pointcut
                     'function(test_function)',                          // for function test_function()
                     'function(not_defined_function_yet)',               // for function not_defined_function_yet()
@@ -51,12 +49,6 @@ class YapaaTest extends \PHPUnit_Framework_TestCase {
         $function_expect = "before\naround before\n2around after\nafter\n";
         $this->assertEquals($method_expect, $this->testObj->test_method(1));
         $this->assertEquals($function_expect, test_function(2));
-    }
-
-    /**
-     * @covers \Yapaa\Yapaa::weaveAllPointcuts
-     */
-    public function testWeaveAllPointcuts() {
         runkit_function_add('not_defined_function_yet', '$param', 'return $param;'); // add new function to be weaved
         $this->assertEquals("test\n", not_defined_function_yet("test\n"));           // is not weaved yet
         \Yapaa\Yapaa::weaveAllPointcuts();                                           // reweave all
